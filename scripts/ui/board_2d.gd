@@ -161,7 +161,8 @@ func _draw() -> void:
 	# templi
 	for spot in e.temple_spots:
 		var p: int = e.temple_spots[spot]
-		_draw_piece("res://assets/segnalini/tempio_b.png", temple_px(spot), 120.0, UI.pcolor(e, p))
+		var td := deg_to_rad(float(e.layout.get("temple_dir", [0, 0, 0, 0, 0])[int(spot)]))
+		_draw_piece("res://assets/segnalini/tempio_b.png", temple_px(spot), 135.0, UI.pcolor(e, p), td - PI * 0.5)
 	# cancelli
 	for g in e.gate_owner:
 		var p: int = e.gate_owner[g]

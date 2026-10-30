@@ -155,6 +155,7 @@ def n(p):
 
 
 AQ = {1, 2, 3, 4, 5, 208}
+TEMPLI = [(366, 361, 221), (500, 2007, -45), (2574, 1989, 221), (2485, 431, -24), (2745, 1171, -90)]
 layout = {
     "board_size": [W, H],
     "noble": [n(P[i]) for i in noble],
@@ -164,8 +165,9 @@ layout = {
     "markets": [[n(MKP[i]) for i in g] for g in GROUPS],
     "market_rot": [[mrot(MKP[i][2]) for i in g] for g in GROUPS],
     "acclaim": [n(p) for p in track],
-    # spazi del Tempio di Fortuna (le cinque piazzole con l'icona del tempio)
-    "temples": [n(p) for p in [(400, 360), (2470, 430), (2745, 1170), (2600, 1995), (485, 2005)]],
+    # piazzole del Tempio della Fortuna: centro e direzione (in gradi, verso l'icona del tempio), misurate sull'immagine
+    "temples": [n((x, y)) for x, y, a in TEMPLI],
+    "temple_dir": [a for x, y, a in TEMPLI],
     "center": n((1500, 1100)),
 }
 os.makedirs(os.path.join(OUT, "data"), exist_ok=True)

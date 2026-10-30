@@ -270,7 +270,7 @@ func _gate_old(col: Color) -> Node3D:
 
 func _temple(col: Color) -> Node3D:
 	var root := Node3D.new()
-	root.add_child(model("tempio", col.lerp(Color.WHITE, 0.15), 0.36, 0.0, 0.6))
+	root.add_child(model("tempio", col.lerp(Color.WHITE, 0.15), 0.52, 0.0, 0.6))
 	return root
 
 
@@ -331,6 +331,9 @@ func refresh() -> void:
 	for spot in e.temple_spots:
 		var n := _temple(UI.pcolor(e, e.temple_spots[spot]))
 		n.position = px3(b2.temple_px(int(spot)))
+		# la facciata con la scalinata verso l'icona del tempio stampata sulla piazzola
+		var th := deg_to_rad(float(e.layout.get("temple_dir", [0, 0, 0, 0, 0])[int(spot)]))
+		n.rotation.y = atan2(cos(th), sin(th)) + PI
 		pieces.add_child(n)
 	for m in 5:
 		for k in e.markets[m].size():
