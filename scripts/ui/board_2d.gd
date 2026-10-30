@@ -82,6 +82,11 @@ func market_px(m: int, k: int) -> Vector2:
 	return Vector2(float(a[0]) * BW, float(a[1]) * BH)
 
 
+func market_rot(m: int, k: int) -> float:
+	var r = e.layout.get("market_rot", [])
+	return deg_to_rad(float(r[m][k])) if r.size() > m else 0.0
+
+
 func market_center(m: int) -> Vector2:
 	var c := Vector2.ZERO
 	for k in 3:
@@ -168,10 +173,12 @@ func _draw() -> void:
 		for k in lot.size():
 			var c := market_px(m, k)
 			var t := UI.tile_tex(lot[k])
-			var sz := 92.0 * s
-			var r := Rect2(to_screen(c) - Vector2(sz, sz) * 0.5, Vector2(sz, sz))
-			draw_rect(r.grow(2), Color(0, 0, 0, 0.45))
+			var sz := 96.0 * s
+			draw_set_transform(to_screen(c), market_rot(m, k), Vector2.ONE)
+			var r := Rect2(-Vector2(sz, sz) * 0.5, Vector2(sz, sz))
+			draw_rect(Rect2(r.position + Vector2(3, 4), r.size), Color(0, 0, 0, 0.45))
 			draw_texture_rect(t, r, false)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		if flash.has(m):
 			var c := to_screen(market_center(m))
 			draw_circle(c, 120 * s, Color(UI.GOLD_L, 0.35 * flash[m]))

@@ -98,6 +98,33 @@ func from3(p: Vector3) -> Vector2:
 
 # ================================================================ materiali e pezzi
 
+## modello della versione deluxe (estratto dal modulo TTS), alto 1 e appoggiato a terra
+func model(name: String, col: Color, h: float, metal := 0.0, rough := 0.6) -> MeshInstance3D:
+	var m: Mesh = load("res://assets/modelli/%s.obj" % name)
+	var mi := MeshInstance3D.new()
+	mi.mesh = m
+	var mt := mat(col, metal, rough)
+	mi.material_override = mt
+	mi.scale = Vector3.ONE * h
+	return mi
+
+
+## sagoma estrusa (Stelle e promotori) con l'immagine sulle due facce
+func cutout(name: String, tex: Texture2D, h: float) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.mesh = load("res://assets/modelli/%s.obj" % name)
+	var k := "tx/" + name
+	if not _mats.has(k):
+		var m := StandardMaterial3D.new()
+		m.albedo_texture = tex
+		m.roughness = 0.75
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_mats[k] = m
+	mi.material_override = _mats[k]
+	mi.scale = Vector3.ONE * h
+	return mi
+
+
 func mat(col: Color, metal := 0.0, rough := 0.7) -> StandardMaterial3D:
 	var k := "%s/%.2f/%.2f" % [col.to_html(), metal, rough]
 	if not _mats.has(k):
@@ -105,7 +132,15 @@ func mat(col: Color, metal := 0.0, rough := 0.7) -> StandardMaterial3D:
 		m.albedo_color = col
 		m.metallic = metal
 		m.roughness = rough
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
 		_mats[k] = m
+	return _mats[k]
+
+
+func _tile_mat(t: String) -> StandardMaterial3D:
+	var k := "tile/" + t
+	if not _mats.has(k):
+		_mats[k] = tex_mat(UI.tile_tex(t))
 	return _mats[k]
 
 
@@ -142,8 +177,9 @@ func _build_table() -> void:
 
 func _bust(i: int) -> Node3D:
 	var root := Node3D.new()
-	var n := _bust_body(i)
-	n.scale = Vector3.ONE * 1.45
+	var names := ["imperatore", "console", "console", "senatore", "senatore", "senatore"]
+	var cols := [Color("#e0b23a"), Color("#c9ccd2"), Color("#c9ccd2"), Color("#b0703e"), Color("#b0703e"), Color("#b0703e")]
+	var n := model(names[i], cols[i], 0.62 if i == 0 else 0.56, 0.8, 0.38)
 	root.add_child(n)
 	return root
 
@@ -177,6 +213,12 @@ func _bust_body(i: int) -> Node3D:
 
 
 func _mercury() -> Node3D:
+	var root := Node3D.new()
+	root.add_child(model("mercurio", Color("#4fb3ab"), 0.6, 0.2, 0.45))
+	return root
+
+
+func _mercury_old() -> Node3D:
 	var n := Node3D.new()
 	var c := CylinderMesh.new()
 	c.top_radius = 0.06
@@ -197,6 +239,14 @@ func _mercury() -> Node3D:
 
 
 func _gate(col: Color) -> Node3D:
+	var root := Node3D.new()
+	var g := model("cancello", col, 0.3, 0.0, 0.6)
+	g.rotation.y = PI * 0.5
+	root.add_child(g)
+	return root
+
+
+func _gate_old(col: Color) -> Node3D:
 	var n := Node3D.new()
 	var m := mat(col, 0.0, 0.6)
 	for s in [-1, 1]:
@@ -218,6 +268,12 @@ func _gate(col: Color) -> Node3D:
 
 
 func _temple(col: Color) -> Node3D:
+	var root := Node3D.new()
+	root.add_child(model("tempio", col.lerp(Color.WHITE, 0.15), 0.36, 0.0, 0.6))
+	return root
+
+
+func _temple_old(col: Color) -> Node3D:
 	var n := Node3D.new()
 	var m := mat(col.lerp(Color.WHITE, 0.25), 0.0, 0.6)
 	var base := BoxMesh.new()
@@ -237,6 +293,12 @@ func _temple(col: Color) -> Node3D:
 
 
 func _pillar(col: Color) -> Node3D:
+	var root := Node3D.new()
+	root.add_child(model("pilastro", col, 0.5, 0.0, 0.55))
+	return root
+
+
+func _pillar_old(col: Color) -> Node3D:
 	var n := Node3D.new()
 	var m := mat(col, 0.0, 0.55)
 	var c := CylinderMesh.new()
@@ -262,7 +324,6 @@ func refresh() -> void:
 	for g in e.gate_owner:
 		var p: int = e.gate_owner[g]
 		var n := _gate(UI.pcolor(e, p))
-		n.scale = Vector3.ONE * 1.25
 		n.position = px3(b2.gate_px(int(g)))
 		n.rotation.y = -deg_to_rad(float(e.layout["gate_angle"][g]))
 		pieces.add_child(n)
@@ -273,9 +334,13 @@ func refresh() -> void:
 	for m in 5:
 		for k in e.markets[m].size():
 			var t := BoxMesh.new()
-			t.size = Vector3(0.36, 0.035, 0.36)
-			var tm := tex_mat(UI.tile_tex(e.markets[m][k]))
-			var mi := _mesh(t, tm, px3(b2.market_px(m, k), 0.02))
+			t.size = Vector3(0.4, 0.035, 0.4)
+			var mi := _mesh(t, mat(Color("#c9b48c")), px3(b2.market_px(m, k), 0.0175))
+			mi.rotation.y = -b2.market_rot(m, k)
+			var top := PlaneMesh.new()
+			top.size = Vector2(0.4, 0.4)
+			var ti := _mesh(top, _tile_mat(e.markets[m][k]), Vector3(0, 0.0185, 0))
+			mi.add_child(ti)
 			pieces.add_child(mi)
 		if e.pillar_at.has(m):
 			var n := _pillar(UI.pcolor(e, e.pillar_at[m]))
@@ -294,24 +359,34 @@ func refresh() -> void:
 		tor.outer_radius = 0.13
 		var mi := _mesh(tor, mat(UI.pcolor(e, p), 0.1, 0.5), px3(b2.acclaim_px(v), 0.03 + 0.06 * k))
 		pieces.add_child(mi)
-	# le Stelle accanto ai cancelli di chi le possiede
+	# davanti ai cancelli di ogni impresario: le sue Stelle, i promotori e il segnalino del primo giocatore
 	for p in e.n:
-		var ss := e.stars_of(p)
-		if ss.is_empty() or e.ps[p]["gates"].is_empty():
+		if e.ps[p]["gates"].is_empty():
 			continue
-		var gp: Vector2 = b2.gate_px(int(e.ps[p]["gates"][0]))
+		var gs: Array = e.ps[p]["gates"]
+		var gp: Vector2 = (b2.gate_px(int(gs[0])) + b2.gate_px(int(gs[-1]))) * 0.5
 		var out := (gp - Vector2(1500, 1100)).normalized()
 		var side := Vector2(-out.y, out.x)
+		var face := atan2(out.x * SW / 3000.0, out.y * SH / 2344.0)
+		var ss := e.stars_of(p)
 		for k in ss.size():
-			var sp := Sprite3D.new()
-			sp.texture = UI.star_tex(ss[k])
-			sp.pixel_size = 0.0016
-			sp.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
-			sp.shaded = false
-			sp.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
-			var at := gp + out * 150.0 + side * (k - (ss.size() - 1) * 0.5) * 70.0
-			sp.position = px3(at, 0.18)
-			pieces.add_child(sp)
+			var st := cutout("stella_" + ss[k], UI.star_tex(ss[k]), 0.36)
+			var at := gp + out * 160.0 + side * (k - (ss.size() - 1) * 0.5) * 75.0
+			st.position = px3(at, 0.0)
+			st.rotation.y = face
+			pieces.add_child(st)
+		var np: int = e.ps[p]["promoters"]
+		for k in np:
+			var pr := cutout("promotore%d" % (k % 3 + 1), UI.tex("res://assets/segnalini/promotore%d.png" % (k % 3 + 1)), 0.26)
+			var at := gp + out * (250.0 if not ss.is_empty() else 160.0) + side * (k - (np - 1) * 0.5) * 50.0
+			pr.position = px3(at, 0.0)
+			pr.rotation.y = face
+			pieces.add_child(pr)
+		if p == e.first:
+			var fm := model("primo_giocatore", Color("#d1a446"), 0.2, 0.6, 0.4)
+			fm.position = px3(gp - side * 170.0 + out * 90.0, 0.0)
+			fm.rotation.y = face
+			pieces.add_child(fm)
 
 
 func refresh_hl() -> void:
@@ -322,7 +397,7 @@ func refresh_hl() -> void:
 	for h in view.hl:
 		var r: float = float(h.get("r", 50.0)) / 3000.0 * SW
 		var tor := TorusMesh.new()
-		tor.inner_radius = r * 0.66
+		tor.inner_radius = r * 0.86
 		tor.outer_radius = r
 		tor.rings = 48
 		var m := StandardMaterial3D.new()
@@ -339,7 +414,7 @@ func refresh_hl() -> void:
 		var dm := StandardMaterial3D.new()
 		dm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		dm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		dm.albedo_color = Color(col, 0.3)
+		dm.albedo_color = Color(col, 0.16)
 		hl_node.add_child(_mesh(disc, dm, px3(h["pos"], 0.02)))
 		if str(h.get("label", "")) != "":
 			var l := Label3D.new()

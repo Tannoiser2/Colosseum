@@ -31,9 +31,10 @@ repository è pubblico).
   valutano scambi anche con le persone. In ogni decisione c'è il pulsante **Decida l'IA**.
 - **Tabellone 2D** come quello stampato, con le pedine originali (cancelli, pilastri, templi, corone,
   tessere degli artisti nei mercati) e i nobili come busti d'oro, d'argento e di bronzo; zoom con la rotella.
-- **Tabellone 3D** girevole: archi dei cancelli nel colore dell'impresario, templi con colonne e frontone,
-  busti metallici dei nobili, pilastri, corone d'alloro, tessere nei mercati, Mercurio e le Stelle in piedi
-  accanto ai cancelli di chi le possiede. Si passa dall'uno all'altro con **2D / 3D**.
+- **Tabellone 3D** girevole con i pezzi della **versione deluxe** del modulo TTS: busti dell'Imperatore, dei
+  consoli e dei senatori, Mercurio, cancelli, pilastri e templi nel colore dell'impresario, segnalino del primo
+  giocatore; le Stelle e i promotori sono sagome spesse come nel modulo, in piedi davanti ai cancelli di chi li
+  possiede. Si passa dall'uno all'altro con **2D / 3D**.
 - **Regole** in italiano con l'elenco illustrato degli spettacoli e degli artisti, dal menu e in partita.
 
 ## Comandi
@@ -78,7 +79,9 @@ Dove il regolamento in bozza lascia spazio, la versione digitale fa così:
   del modulo TTS.
 - `scripts/ui/` — menu, partita, tabellone 2D e 3D, regole.
 - `scripts/net/` — Firebase e partita online in lockstep.
-- `assets/` — immagini originali estratte dal modulo con `tools/estrai_materiale.py`.
+- `assets/` — immagini originali estratte dal modulo con `tools/estrai_materiale.py`; in `assets/modelli/` i
+  modelli 3D deluxe (ricavati dagli asset bundle Unity del modulo e alleggeriti a qualche migliaio di triangoli)
+  e le sagome estruse di Stelle e promotori (`tools/estrudi_sagome.py`).
 - `tests/sim.gd` — partite IA contro IA senza grafica:
   `godot --headless --path . -s tests/sim.gd -- 4 8 1` (4 impresari, 8 partite, IA normale).
 - `tests/online_play.gd` + `tests/firebase_mock.py` — partita online completa fra due istanze su un

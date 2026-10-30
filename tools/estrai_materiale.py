@@ -121,7 +121,22 @@ for i in list(range(154, 208)) + list(range(209, 227)):
     if all(math.hypot(u - g[1], v - g[2]) > 25 for g in gates):
         gates.append((i, u, v))
 gates.sort(key=lambda g: ang((g[1], g[2])))
-market = sorted(range(36, 51), key=lambda i: ang(P[i], 1500, 1180))
+# mercati: le 15 posizioni dello script del modulo (coordinate del tavolo), a gruppi di tre fra i corridoi
+MK = [(-6.19, 1.5, 105.33), (-5.11, 3.58, 136.98), (-3.42, 4.62, 150), (-1.44, 5.02, 172.59), (1.24, 5.19, 190.2),
+      (3.3, 4.64, 209.99), (4.97, 3.62, 225), (6.11, 1.49, 254.99), (5.69, -0.55, 300.02), (4.38, -2.03, 315.02),
+      (1.87, -3.18, 344.99), (-0.02, -3.38, 359.99), (-2.03, -3.17, 14.99), (-4.58, -2.05, 44.99), (-5.94, -0.6, 59.99)]
+BS = 7.48096132
+MKP = [((0.5 + x / BS / (2 * SX)) * W, (0.5 - zz / BS / (2 * SZ)) * H, r) for x, zz, r in MK]
+GROUPS = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 0]]
+
+
+def mrot(r):
+    a = (r - 180 + 540) % 360 - 180
+    if a > 90:
+        a -= 180
+    if a < -90:
+        a += 180
+    return round(a, 1)
 acc = sorted(range(51, 149), key=lambda i: ang(P[i], 1500, 1172))
 s0 = acc.index(105)
 acc = acc[s0:] + acc[:s0]
@@ -145,7 +160,8 @@ layout = {
     "noble_aquila": [k for k, i in enumerate(noble) if i in AQ],
     "gates": [n((g[1], g[2])) for g in gates],
     "gate_angle": [round(ang((g[1], g[2])), 1) for g in gates],
-    "markets": [[n(P[i]) for i in market[m * 3:m * 3 + 3]] for m in range(5)],
+    "markets": [[n(MKP[i]) for i in g] for g in GROUPS],
+    "market_rot": [[mrot(MKP[i][2]) for i in g] for g in GROUPS],
     "acclaim": [n(p) for p in track],
     # spazi del Tempio di Fortuna (le cinque piazzole con l'icona del tempio)
     "temples": [n(p) for p in [(400, 360), (2470, 430), (2745, 1170), (2600, 1995), (485, 2005)]],
