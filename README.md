@@ -34,7 +34,10 @@ repository è pubblico).
 - **Tabellone 3D** girevole con i pezzi della **versione deluxe** del modulo TTS: busti dell'Imperatore, dei
   consoli e dei senatori, Mercurio, cancelli, pilastri e templi nel colore dell'impresario, segnalino del primo
   giocatore; le Stelle e i promotori sono sagome spesse come nel modulo, in piedi davanti ai cancelli di chi li
-  possiede. Si passa dall'uno all'altro con **2D / 3D**.
+  possiede. Attorno al tabellone ci sono le **plance originali degli impresari** con i loro pezzi: le pile di
+  artisti nelle 12 caselle, le Stelle sulla statua, i promotori nel corteo, i doni, le Aquile, le monete, i pezzi
+  non ancora usati e gli spettacoli (quello in scena nella cornice dell'arena, gli altri sotto la plancia).
+  **Plancia 3D** inquadra da vicino la propria plancia; si passa dal 2D al 3D con **2D / 3D**.
 - **Regole** in italiano con l'elenco illustrato degli spettacoli e degli artisti, dal menu e in partita.
 
 ## Comandi

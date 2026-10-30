@@ -19,8 +19,8 @@ var nobles: Array = []
 var mercury_node: Node3D
 var yaw := 0.0
 var pitch := 0.95
-var dist := 15.0
-var target := Vector3(0, 0, 0.6)
+var dist := 19.0
+var target := Vector3(0, 0, 1.4)
 var _drag := 0
 var _from := Vector2.ZERO
 var _moved := 0.0
@@ -73,6 +73,7 @@ func set_engine(eng: CSEngine) -> void:
 		nobles.append(b)
 	mercury_node = _mercury()
 	world.add_child(mercury_node)
+	_build_player_boards()
 	refresh()
 
 
@@ -163,7 +164,7 @@ func _mesh(m: Mesh, mt: Material, pos := Vector3.ZERO) -> MeshInstance3D:
 
 func _build_table() -> void:
 	var table := PlaneMesh.new()
-	table.size = Vector2(60, 60)
+	table.size = Vector2(80, 80)
 	var tm := mat(Color("#3a2416"), 0.0, 0.9)
 	world.add_child(_mesh(table, tm, Vector3(0, -0.2, 0)))
 	var base := BoxMesh.new()
@@ -387,6 +388,171 @@ func refresh() -> void:
 			fm.position = px3(gp - side * 170.0 + out * 90.0, 0.0)
 			fm.rotation.y = face
 			pieces.add_child(fm)
+	_refresh_player_boards()
+
+
+# ================================================================ plance degli impresari
+
+const PB_W := 6.6
+const PB_H := 6.6 * 1011.0 / 4731.0
+const TABLE_Y := -0.2
+var pb_nodes: Array = []
+
+
+## posizione e orientamento della plancia del giocatore p (in basso i primi due, in alto gli altri, il quinto a destra)
+func pb_xform(p: int) -> Transform3D:
+	var spots := [[-3.45, SH * 0.5 + 1.05, 0.0], [3.45, SH * 0.5 + 1.05, 0.0], [3.45, -SH * 0.5 - 1.05, PI],
+		[-3.45, -SH * 0.5 - 1.05, PI], [SW * 0.5 + 1.05, 0.0, PI * 0.5]]
+	if e.n == 3 and p == 2:
+		spots[2] = [0.0, -SH * 0.5 - 1.05, PI]
+	var sp: Array = spots[p]
+	var b := Basis(Vector3.UP, float(sp[2]))
+	return Transform3D(b, Vector3(float(sp[0]), TABLE_Y, float(sp[1])))
+
+
+## punto della plancia (u, v da 0 a 1 sull'immagine) nelle coordinate del tavolo
+func pb_at(p: int, u: float, v: float, y := 0.0) -> Vector3:
+	return pb_xform(p) * Vector3((u - 0.5) * PB_W, 0.04 + y, (v - 0.5) * PB_H)
+
+
+func _build_player_boards() -> void:
+	for nd in pb_nodes:
+		nd.queue_free()
+	pb_nodes.clear()
+	for p in e.n:
+		var n := Node3D.new()
+		n.transform = pb_xform(p)
+		world.add_child(n)
+		pb_nodes.append(n)
+		var base := BoxMesh.new()
+		base.size = Vector3(PB_W + 0.08, 0.04, PB_H + 0.08)
+		n.add_child(_mesh(base, mat(Color("#1d140e")), Vector3(0, 0.02, 0)))
+		var top := PlaneMesh.new()
+		top.size = Vector2(PB_W, PB_H)
+		var key: String = D.COLORS[e.pcol(p)]["key"]
+		n.add_child(_mesh(top, tex_mat(UI.tex("res://assets/plance/%s.jpg" % key)), Vector3(0, 0.041, 0)))
+		var l := Label3D.new()
+		l.text = e.pname(p)
+		l.font = UI.font_head
+		l.font_size = 72
+		l.pixel_size = 0.005
+		l.outline_size = 14
+		l.modulate = UI.pcolor(e, p)
+		l.rotation_degrees = Vector3(-90, 0, 0)
+		l.position = Vector3(-PB_W * 0.5 + 0.1, 0.05, PB_H * 0.5 + 0.18)
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		n.add_child(l)
+
+
+func _tile3(t: String, at: Vector3, rot: float, size := 0.4) -> MeshInstance3D:
+	var bx := BoxMesh.new()
+	bx.size = Vector3(size, 0.03, size)
+	var mi := _mesh(bx, mat(Color("#c9b48c")), at + Vector3(0, 0.015, 0))
+	mi.rotation.y = rot
+	var top := PlaneMesh.new()
+	top.size = Vector2(size, size)
+	mi.add_child(_mesh(top, _tile_mat(t), Vector3(0, 0.016, 0)))
+	return mi
+
+
+func _flat(tex: Texture2D, at: Vector3, rot: float, w: float, h: float, key: String) -> MeshInstance3D:
+	var k := "flat/" + key
+	if not _mats.has(k):
+		var m := StandardMaterial3D.new()
+		m.albedo_texture = tex
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		m.alpha_scissor_threshold = 0.5
+		m.roughness = 0.6
+		_mats[k] = m
+	var pl := PlaneMesh.new()
+	pl.size = Vector2(w, h)
+	var mi := _mesh(pl, _mats[k], at)
+	mi.rotation.y = rot
+	return mi
+
+
+## i pezzi sulle plance: artisti nelle caselle, Stelle, promotori, Aquile, monete, doni, spettacoli
+func _refresh_player_boards() -> void:
+	for p in e.n:
+		var st: Dictionary = e.ps[p]
+		var rot := pb_xform(p).basis.get_euler().y
+		# artisti: una pila per tipo nelle 12 caselle in alto
+		for k in D.TYPES.size():
+			var c: int = st["tiles"][D.TYPES[k]]
+			for j in mini(c, 8):
+				pieces.add_child(_tile3(D.TYPES[k], pb_at(p, (75.0 + 147.3 * k) / 1800.0, 0.115, 0.032 * j), rot))
+			if c > 0:
+				var l := Label3D.new()
+				l.text = "×%d" % c
+				l.font = UI.font_head
+				l.font_size = 48
+				l.pixel_size = 0.004
+				l.outline_size = 12
+				l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+				l.no_depth_test = true
+				l.position = pb_at(p, (75.0 + 147.3 * k) / 1800.0, 0.115, 0.032 * mini(c, 8) + 0.16)
+				pieces.add_child(l)
+		# balatroni accanto all'arena
+		for j in int(st["tiles"].get(D.WILD, 0)):
+			pieces.add_child(_tile3(D.WILD, pb_at(p, 0.37 + 0.03 * j, 0.62, 0.0), rot))
+		# Stelle sulla statua (+4), promotori nel corteo (+5)
+		var ss := e.stars_of(p)
+		for k in ss.size():
+			var sm := cutout("stella_" + ss[k], UI.star_tex(ss[k]), 0.36)
+			sm.position = pb_at(p, 0.43 + 0.022 * (k - (ss.size() - 1) * 0.5), 0.62)
+			sm.rotation.y = rot
+			pieces.add_child(sm)
+		for k in int(st["promoters"]):
+			var pr := cutout("promotore%d" % (k % 3 + 1), UI.tex("res://assets/segnalini/promotore%d.png" % (k % 3 + 1)), 0.27)
+			pr.position = pb_at(p, 0.745 + 0.02 * (k % 6), 0.68 + 0.06 * (k / 6))
+			pr.rotation.y = rot
+			pieces.add_child(pr)
+		# doni dell'Imperatore sul rotolo (+5 e +3)
+		for k in int(st["gifts"]):
+			pieces.add_child(_flat(UI.tex("res://assets/segnalini/dono%d.png" % (k % 4 + 1)), pb_at(p, 0.38 + 0.035 * k, 0.86, 0.002 + 0.001 * k), rot, 0.3, 0.36, "dono%d" % (k % 4 + 1)))
+		# Aquile in basso a destra
+		for k in int(st["aquila"]):
+			pieces.add_child(_flat(UI.tex("res://assets/segnalini/aquila.png"), pb_at(p, 0.962, 0.86, 0.003 + 0.004 * k), rot, 0.24, 0.27, "aquila"))
+		# monete accanto alla plancia, in pile per taglio
+		var left: int = st["coins"]
+		var col := 0
+		for d: int in [20, 10, 5, 3, 1]:
+			var q: int = left / d
+			left -= q * d
+			if q <= 0:
+				continue
+			for j in mini(q, 10):
+				pieces.add_child(_flat(UI.tex("res://assets/monete/m%d.png" % d), pb_at(p, 0.04 + 0.055 * col, 1.95, 0.004 * j), rot, 0.3, 0.3, "m%d" % d))
+			col += 1
+		# pezzi non ancora usati: pilastro, cancelli, tempio
+		if st["pillar"]:
+			var pl := _pillar(UI.pcolor(e, p))
+			pl.position = pb_at(p, 0.4, 1.95)
+			pieces.add_child(pl)
+		for k in 4 - st["gates"].size():
+			var g := _gate(UI.pcolor(e, p))
+			g.position = pb_at(p, 0.5 + 0.06 * k, 1.95)
+			g.rotation.y = rot
+			pieces.add_child(g)
+		if st["temple"] < 0:
+			var tp := _temple(UI.pcolor(e, p))
+			tp.position = pb_at(p, 0.8, 1.95)
+			tp.rotation.y = rot
+			pieces.add_child(tp)
+		# spettacoli: in scena nella cornice dell'arena, gli altri sotto la plancia
+		if st["cur"] != "":
+			var t := UI.spect_tex(st["cur"], true)
+			pieces.add_child(_flat(t, pb_at(p, 0.183, 0.52, 0.004), rot, 0.82 * t.get_width() / t.get_height(), 0.82, st["cur"] + "_a"))
+		var ids: Array = st["plan"].duplicate()
+		ids.append_array(st["done"])
+		var x := 0.0
+		for id in ids:
+			var done: bool = id in st["done"]
+			var t := UI.spect_tex(id, done)
+			var w := 0.62 * t.get_width() / t.get_height()
+			var at := pb_xform(p) * Vector3(-PB_W * 0.5 + x + w * 0.5, 0.005, PB_H * 0.5 + 0.58)
+			pieces.add_child(_flat(t, at, rot, w, 0.62, id + ("_a" if done else "_p")))
+			x += w + 0.08
 
 
 func refresh_hl() -> void:
@@ -456,7 +622,7 @@ func _process(dt: float) -> void:
 
 func _update_cam() -> void:
 	pitch = clampf(pitch, 0.25, 1.45)
-	dist = clampf(dist, 4.0, 26.0)
+	dist = clampf(dist, 3.0, 32.0)
 	var off := Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * dist
 	cam.position = target + off
 	cam.look_at(target, Vector3.UP)
@@ -498,8 +664,8 @@ func _gui_input(ev: InputEvent) -> void:
 					var fwd := Vector3(-sin(yaw), 0, -cos(yaw))
 					target -= right * mm.relative.x * dist * 0.0012
 					target += fwd * mm.relative.y * dist * 0.0012
-					target.x = clampf(target.x, -SW * 0.6, SW * 0.6)
-					target.z = clampf(target.z, -SH * 0.6, SH * 0.6)
+					target.x = clampf(target.x, -SW * 0.9, SW * 0.9)
+					target.z = clampf(target.z, -SH * 0.9, SH * 0.9)
 				_update_cam()
 		elif view != null:
 			var px := _pick(mm.position)
@@ -524,9 +690,19 @@ func _pick(pos: Vector2) -> Vector2:
 	return from3(o + d * t)
 
 
+## inquadra da vicino la plancia del giocatore p (la telecamera si mette dalla sua parte del tavolo)
+func focus_board(p: int) -> void:
+	var xf := pb_xform(p)
+	target = xf * Vector3(0, 0, 0.1)
+	yaw = xf.basis.get_euler().y
+	pitch = 0.85
+	dist = 7.5
+	_update_cam()
+
+
 func reset_view() -> void:
 	yaw = 0.0
 	pitch = 0.95
-	dist = 15.0
-	target = Vector3(0, 0, 0.6)
+	dist = 19.0
+	target = Vector3(0, 0, 1.4)
 	_update_cam()

@@ -35,7 +35,7 @@ func _run(out: String) -> void:
 	await create_timer(0.5).timeout
 	await _snap(out, "panoramica")
 	var b = g.board3d
-	for v in [[0.0, 0.7, 7.0, Vector3(0, 0, -1.5)], [0.9, 0.55, 6.0, Vector3(2.5, 0, 0)], [-2.2, 0.5, 6.0, Vector3(-2, 0, 1.5)], [3.1, 0.45, 5.5, Vector3(0, 0, 2.5)]]:
+	for v in [[0.0, 0.75, 6.5, Vector3(-3.4, 0, 6.2)], [0.0, 0.6, 5.0, Vector3(3.4, 0, 6.0)], [0.9, 0.55, 6.0, Vector3(2.5, 0, 0)], [3.1, 0.6, 7.5, Vector3(0, 0, -5.5)]]:
 		b.yaw = v[0]
 		b.pitch = v[1]
 		b.dist = v[2]
@@ -43,4 +43,10 @@ func _run(out: String) -> void:
 		b._update_cam()
 		await create_timer(0.4).timeout
 		await _snap(out, "vista_%d" % int(v[0] * 10))
+	b.focus_board(0)
+	await create_timer(0.4).timeout
+	await _snap(out, "plancia_0")
+	b.focus_board(2)
+	await create_timer(0.4).timeout
+	await _snap(out, "plancia_2")
 	quit()

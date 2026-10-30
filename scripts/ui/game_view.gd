@@ -118,6 +118,17 @@ func _build() -> void:
 	var b_disp := UI.button("Spettacoli in vendita", 0, 46, 19)
 	b_disp.pressed.connect(func(): _gallery(false))
 	th.add_child(b_disp)
+	var b_pb := UI.button("Plancia 3D", 140, 46, 19)
+	b_pb.tooltip_text = "Tabellone 3D: inquadra la tua plancia (premi ancora per tornare al tabellone)"
+	b_pb.pressed.connect(func():
+		if not view3d:
+			view3d = true
+			_apply_view()
+		if board3d.dist < 9.0:
+			board3d.reset_view()
+		else:
+			board3d.focus_board(viewer()))
+	th.add_child(b_pb)
 	var b_view := UI.button("2D / 3D", 110, 46, 19)
 	b_view.pressed.connect(func():
 		view3d = not view3d
