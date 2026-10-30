@@ -46,6 +46,16 @@ func _run(out: String) -> void:
 	b.focus_board(0)
 	await create_timer(0.4).timeout
 	await _snap(out, "plancia_0")
+	# tutte le Stelle al Rosso, per vederle da vicino
+	for t in g.engine.stars:
+		g.engine.stars[t] = 0
+	b.refresh()
+	b.target = b.pb_at(0, 0.43, 0.6)
+	b.dist = 2.6
+	b.pitch = 0.5
+	b._update_cam()
+	await create_timer(0.4).timeout
+	await _snap(out, "stelle")
 	b.focus_board(2)
 	await create_timer(0.4).timeout
 	await _snap(out, "plancia_2")

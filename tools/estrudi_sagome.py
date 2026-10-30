@@ -13,7 +13,7 @@ from shapely.ops import unary_union
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 A = os.path.join(OUT, "assets")
-SPESSORE = 0.11
+SPESSORE = 0.2
 
 
 def sagoma(png, nome):
@@ -28,7 +28,7 @@ def sagoma(png, nome):
         p = Polygon(pts).buffer(0)
         if p.area > 40:
             polys.append(p)
-    shape = unary_union(polys).simplify(0.9)
+    shape = unary_union(polys).simplify(0.6)
     geoms = list(shape.geoms) if hasattr(shape, "geoms") else [shape]
     meshes = []
     for g in geoms:
@@ -37,8 +37,21 @@ def sagoma(png, nome):
         m = trimesh.creation.extrude_polygon(g, SPESSORE * h)
         meshes.append(m)
     m = trimesh.util.concatenate(meshes)
+    # colore pieno per i fianchi, come le sagome di legno: il colore più comune fra i pixel opachi
+    rgb = im[..., :3][im[..., 3] > 200].astype(int)
+    q = (rgb // 24) * 24
+    vals, cnt = np.unique(q, axis=0, return_counts=True)
+    dom = vals[cnt.argmax()]
+    ys, xs = np.nonzero((im[..., 3] > 200) & (np.abs((im[..., :3] // 24) * 24 - dom).sum(axis=2) == 0))
+    k = len(ys) // 2
+    side_uv = ((xs[k] + 0.5) / w, 1.0 - (ys[k] + 0.5) / h)
+    m.unmerge_vertices()
     v = m.vertices.copy()
     uv = np.stack([v[:, 0] / w, v[:, 1] / h], axis=1)
+    fn = m.face_normals
+    for fi, f in enumerate(m.faces):
+        if abs(fn[fi][2]) < 0.5:
+            uv[f] = side_uv
     v = v / h
     v[:, 0] -= (w / h) * 0.5
     v[:, 2] -= SPESSORE * 0.5

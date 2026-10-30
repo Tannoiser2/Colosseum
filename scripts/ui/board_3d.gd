@@ -499,7 +499,9 @@ func _refresh_player_boards() -> void:
 		var ss := e.stars_of(p)
 		for k in ss.size():
 			var sm := cutout("stella_" + ss[k], UI.star_tex(ss[k]), 0.36)
-			sm.position = pb_at(p, 0.43 + 0.022 * (k - (ss.size() - 1) * 0.5), 0.62)
+			var row := k / 6
+			var nrow := mini(6, ss.size() - row * 6)
+			sm.position = pb_at(p, 0.43 + 0.028 * ((k % 6) - (nrow - 1) * 0.5), 0.5 + 0.22 * row)
 			sm.rotation.y = rot
 			pieces.add_child(sm)
 		for k in int(st["promoters"]):

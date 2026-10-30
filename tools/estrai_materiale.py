@@ -78,7 +78,8 @@ TOK = {"stelle/elefante": "C5A5525892E1E68A3302", "stelle/auriga": "608B3228F783
        "monete/m3": "1B8F838D88DC24360D88", "monete/m5": "B23C0595874A99AC7AE2",
        "monete/m10": "5BF661F63BF0C715BF8D", "monete/m20": "F4121F154033BEED7988"}
 for k, suf in TOK.items():
-    save(img_by(suf), k + ".png", 220, 220)
+    big = k.startswith("stelle/") or k.startswith("segnalini/promotore")
+    save(img_by(suf), k + ".png", 400 if big else 220, 400 if big else 220)
 
 # ---------------------------------------------------------------- tessere Spettacolo (fronte = da pianificare, retro = illustrata)
 tiles = []
