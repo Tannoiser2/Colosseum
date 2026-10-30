@@ -43,16 +43,15 @@ func _ready() -> void:
 	en.background_mode = Environment.BG_COLOR
 	en.background_color = Color("#140d08")
 	en.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	en.ambient_light_color = Color("#d8c3a0")
-	en.ambient_light_energy = 0.32
-	en.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	en.tonemap_exposure = 0.9
+	en.ambient_light_color = Color("#f2ece2")
+	en.ambient_light_energy = 0.38
+	en.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	env.environment = en
 	world.add_child(env)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-55, -35, 0)
-	sun.light_energy = 0.75
-	sun.light_color = Color("#fff1d6")
+	sun.light_energy = 0.62
+	sun.light_color = Color("#fff6ea")
 	sun.shadow_enabled = true
 	world.add_child(sun)
 	cam = Camera3D.new()
@@ -322,17 +321,26 @@ func refresh_hl() -> void:
 		c.queue_free()
 	for h in view.hl:
 		var r: float = float(h.get("r", 50.0)) / 3000.0 * SW
-		var cyl := CylinderMesh.new()
-		cyl.top_radius = r
-		cyl.bottom_radius = r
-		cyl.height = 0.02
+		var tor := TorusMesh.new()
+		tor.inner_radius = r * 0.66
+		tor.outer_radius = r
+		tor.rings = 48
 		var m := StandardMaterial3D.new()
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		var col: Color = h.get("col", UI.GOLD_L)
-		m.albedo_color = Color(col, 0.45)
-		var mi := _mesh(cyl, m, px3(h["pos"], 0.012))
+		m.albedo_color = col
+		var mi := _mesh(tor, m, px3(h["pos"], 0.03))
+		mi.scale = Vector3(1, 0.7, 1)
 		hl_node.add_child(mi)
+		var disc := CylinderMesh.new()
+		disc.top_radius = r * 0.8
+		disc.bottom_radius = r * 0.8
+		disc.height = 0.01
+		var dm := StandardMaterial3D.new()
+		dm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		dm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		dm.albedo_color = Color(col, 0.3)
+		hl_node.add_child(_mesh(disc, dm, px3(h["pos"], 0.02)))
 		if str(h.get("label", "")) != "":
 			var l := Label3D.new()
 			l.text = h["label"]
@@ -340,7 +348,9 @@ func refresh_hl() -> void:
 			l.font_size = 64
 			l.pixel_size = 0.004
 			l.outline_size = 16
-			l.modulate = col
+			l.modulate = col.lightened(0.2)
+			l.outline_modulate = Color(0, 0, 0, 0.9)
+			l.double_sided = true
 			l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 			l.position = px3(h["pos"], 0.45)
 			l.no_depth_test = true
@@ -361,11 +371,10 @@ func _process(dt: float) -> void:
 	else:
 		mp = Vector2(1500, 1060)
 	mercury_node.position = mercury_node.position.lerp(px3(mp), minf(1.0, dt * 6.0))
-	var pulse := 0.35 + 0.2 * sin(Time.get_ticks_msec() / 160.0)
+	var pulse := 1.0 + 0.08 * sin(Time.get_ticks_msec() / 160.0)
 	for c in hl_node.get_children():
-		if c is MeshInstance3D:
-			var m: StandardMaterial3D = c.material_override
-			m.albedo_color.a = pulse
+		if c is MeshInstance3D and c.mesh is TorusMesh:
+			c.scale = Vector3(pulse, 0.7, pulse)
 
 
 # ================================================================ telecamera e input

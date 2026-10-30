@@ -268,6 +268,11 @@ func _invest(e: CSEngine, p: int, req: Dictionary) -> Dictionary:
 		var v: float = gain
 		cands.append({"k": "spect", "id": id, "v": _noise(v) - s["cost"], "cost": s["cost"]})
 	cands.sort_custom(func(a, c): return a["v"] > c["v"])
+	if level == 0 and cands.size() > 1 and rng.randf() < 0.35:
+		# l'IA facile a volte sceglie d'istinto
+		var k: Dictionary = cands[rng.randi_range(0, cands.size() - 1)]
+		cands.erase(k)
+		cands.push_front(k)
 	for c in cands:
 		if c["v"] <= 0.0:
 			break
@@ -324,7 +329,26 @@ func _max_bid(e: CSEngine, p: int, m: int) -> int:
 	var v := lot_value(e, p, e.markets[m])
 	var last := rounds_left(e) <= 1
 	var reserve := 0 if last else 2
+	if level == 0:
+		# l'IA facile non si svena: offre al massimo i due terzi del valore
+		v *= 0.65
+	elif level >= 2:
+		# l'IA difficile considera anche quanto il lotto servirebbe al rivale più pericoloso
+		var deny := 0.0
+		for q in e.n:
+			if q != p and e.ps[q]["pillar"] and e.budget(q) > D.MIN_BID:
+				var gq := best_perf(e, q, tiles_plus(e.ps[q]["tiles"], _lot_items(e.markets[m])), -1, [], false) - best_perf(e, q, e.ps[q]["tiles"], -1, [], false)
+				deny = maxf(deny, gq * (1.3 if q == e.leader() else 1.0))
+		v += 0.25 * deny * conv(e) * (0.3 if last else 1.0)
 	return int(minf(v, e.budget(p) - reserve))
+
+
+func _lot_items(lot: Array) -> Dictionary:
+	var items := {}
+	for t in lot:
+		if t != D.AQUILA:
+			items[t] = int(items.get(t, 0)) + 1
+	return items
 
 
 func _auction(e: CSEngine, p: int, req: Dictionary) -> Dictionary:
@@ -372,7 +396,7 @@ func accept_trade(e: CSEngine, p: int, from: int, give: Dictionary, get_: Dictio
 
 
 func _trade(e: CSEngine, p: int, req: Dictionary) -> Dictionary:
-	if int(req["offers"]) >= (1 if level == 0 else 3):
+	if level == 0 or int(req["offers"]) >= 3:
 		return {"end": true}
 	var mine: Dictionary = e.ps[p]["tiles"]
 	var cur := best_perf(e, p, mine)
@@ -434,8 +458,9 @@ func _nobles(e: CSEngine, p: int, req: Dictionary) -> Dictionary:
 	for pl in plans:
 		var pos: Array = pl["pos"]
 		var v := float(e.noble_bonus(p, pos))
-		for q in later:
-			v -= 0.45 * e.noble_bonus(q, pos) * (1.0 if level >= 1 else 0.3)
+		if level >= 1:
+			for q in later:
+				v -= (0.45 if level == 1 else 0.6) * e.noble_bonus(q, pos)
 		for mv in pl["moves"]:
 			if e.is_aquila_space(pos[int(mv[0])]):
 				v += 2.5
